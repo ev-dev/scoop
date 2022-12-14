@@ -619,31 +619,7 @@ function is_directory([String] $path) {
 }
 
 function movedir($from, $to) {
-    $from = $from.trimend('\')
-    $to = $to.trimend('\')
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo.FileName = 'robocopy.exe'
-    $proc.StartInfo.Arguments = "`"$from`" `"$to`" /e /move"
-    $proc.StartInfo.RedirectStandardOutput = $true
-    $proc.StartInfo.RedirectStandardError = $true
-    $proc.StartInfo.UseShellExecute = $false
-    $proc.StartInfo.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
-    [void]$proc.Start()
-    $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
-    $proc.WaitForExit()
-
-    if($proc.ExitCode -ge 8) {
-        debug $stdoutTask.Result
-        throw "Could not find '$(fname $from)'! (error $($proc.ExitCode))"
-    }
-
-    # wait for robocopy to terminate its threads
-    1..10 | ForEach-Object {
-        if (Test-Path $from) {
-            Start-Sleep -Milliseconds 100
-        }
-    }
+    Move-Item -Path "$from" -Destination "$to"
 }
 
 function get_app_name($path) {
@@ -967,12 +943,6 @@ function remove_from_path($dir, $global) {
     # current session
     $was_in_path, $newpath = strip_path $env:PATH $dir
     if($was_in_path) { $env:PATH = $newpath }
-}
-
-function ensure_robocopy_in_path {
-    if(!(Test-CommandAvailable robocopy)) {
-        shim "C:\Windows\System32\Robocopy.exe" $false
-    }
 }
 
 function wraptext($text, $width) {
